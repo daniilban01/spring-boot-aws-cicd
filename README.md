@@ -1,38 +1,44 @@
-# SkillBrain Java App
+# Spring Boot CI/CD Pipeline on AWS
 
-Acesta este proiectul de bază pentru Modulul 4, folosit progresiv în toate exercițiile de CI/CD.
+CI/CD pipeline built with **GitHub Actions** that automatically tests, packages and deploys a Spring Boot application to **AWS Elastic Beanstalk**, plus a scheduled backup job to **Amazon S3**.
 
-## Stack
+> The Spring Boot application was provided as a starter project in the SkillBrain DevOps Engineer course. The CI/CD pipeline, deployment configuration and backup workflow are my own work.
 
-- Java 17
-- Spring Boot 3
-- Maven
-- JUnit 5
+## Tech Stack
+- **CI/CD:** GitHub Actions
+- **Cloud:** AWS Elastic Beanstalk, Amazon S3
+- **Application:** Java 17, Spring Boot 3, Maven, JUnit 5
+- **Containerization:** Docker
 
-## Endpoints
+## Pipelines
 
-- `GET /` -> UI web pentru demo
-- `GET /api/health` -> status aplicație
-- `GET /api/info` -> mesaj de status al aplicației
-- `GET /api/pipeline` -> pașii pipeline-ului folosiți în laborator
+### `ci-cd-eb.yml`: build, test and deploy
+Runs on every push to `main` (or manually):
+1. **Build & test:** sets up JDK 17 with Maven caching and runs `mvn clean verify` (including JUnit tests).
+2. **Package:** builds the JAR and bundles it with a `Procfile` into a deployment package, uploaded as a workflow artifact.
+3. **Deploy:** authenticates to AWS and deploys the package to Elastic Beanstalk, using the commit SHA as the version label.
 
-## Rulezi local
+### `backup-to-s3.yml`: scheduled backup
+Runs every night at 02:00 UTC (or manually): archives the repository and uploads it to an S3 bucket.
 
+All credentials (AWS keys, region, bucket name) are stored as **GitHub Secrets** and never committed to the repository.
+
+## Application Endpoints
+- `GET /` - web UI
+- `GET /api/health` - application status
+- `GET /api/info` - status message
+- `GET /api/pipeline` - pipeline steps
+
+## Run Locally
 ```bash
 mvn clean test
 mvn spring-boot:run
 ```
+The app starts on `http://localhost:8080`.
 
-Aplicația pornește implicit pe `http://localhost:8080`, iar pagina principală este UI-ul web.
-
-## Milestones pentru laborator
-
-1. **CI de bază**: build + test în GitHub Actions.
-2. **Publish artefact**: JAR upload ca artifact în workflow.
-3. **Containerizare**: build/push imagine în GHCR.
-4. **Deploy**: deploy în mediu cloud (ex. Elastic Beanstalk).
-5. **Backup**: arhivare + upload în S3 pe schedule.
-
-## Ce trebuie să faci tu
-
-Repo-ul nu include workflow-urile finale de curs. Le adaugi tu pas cu pas în `.github/workflows`, conform lecțiilor.
+To run it with Docker:
+```bash
+mvn clean package
+docker build -t spring-boot-app .
+docker run -p 8080:8080 spring-boot-app
+```
